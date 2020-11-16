@@ -1,5 +1,7 @@
 # CS286_FinalProject
 
-pip install tsp
+To run this code, first git clone this repository and navigate into the main "CS286_FinalProject" directory
 
-python3 baseline.py
+Install the Travelling Salesman Problem solver with: pip install tsp
+
+Run the baseline simulation with: python3 baseline.py
