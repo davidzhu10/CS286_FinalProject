@@ -44,8 +44,8 @@ def simulate(mx, my, tasks):
     curx = mx
     cury = my
     while (tdone + 1 < len(tasks)):
-        print("tdone:", tdone)
-        print("tavailable:", tavailable)
+        # print("tdone:", tdone)
+        # print("tavailable:", tavailable)
         if tavailable == tdone: # no tasks available
             if curx != mx or cury != my: # not at median, so move to median
                 dist = euc_dist(curx, cury, mx, my)
@@ -93,23 +93,29 @@ def simulate(mx, my, tasks):
 if __name__ == "__main__":
     n = 4 # number of robots
     dim = 10 # length of side length of square world
-    end_time = 100
-    lam = 0.2 # new task every 5 steps
+    end_time = 1000
+    lam = 0.7 # rate parameter lambda, the expected number of new tasks per timestep
     init_x = [2, 4, 5, 9]
     init_y = [6, 4, 3, 8]
 
-    coverage_iters = 10
+    # init_x = [2, 4, 9]
+    # init_y = [6, 4, 8]
+
+    # init_x = [2, 4, 5, 9, 8]
+    # init_y = [6, 4, 3, 8, 1]
+
+    coverage_iters = 20
     (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters)
 
     task_times = generate_task_times(end_time, lam)
     T = len(task_times) # number of tasks
-    print("Arrival times of", T, "tasks:", task_times)
+    # print("Arrival times of", T, "tasks:", task_times)
     (tx, ty) = generate_task_locs(T, dim)
     rtasks = [[] for _ in range(n)]
     for i in range(T):
         which_robot = which_region(tx[i], ty[i], mx, my)
         rtasks[which_robot].append((task_times[i], tx[i], ty[i]))
-    print("Tasks assigned to each robot:", rtasks)
+    # print("Tasks assigned to each robot:", rtasks)
 
     # simulate robots
     total_wait_time = 0
