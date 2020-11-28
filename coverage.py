@@ -6,20 +6,20 @@ from scipy.stats import multivariate_normal
 
 class Robot(object):
 
-    def __init__(self, state, k=0.1):
-        self._state = state     # 2-vec
-        self.input = [0, 0]      # movement vector later
-
+    def __init__(self, state, k=0.1, speed=1.0):
+        self._state = state # 2-vec
+        self.input = [0, 0] # movement vector later
         self.k = k * 0.001
+        self.speed = speed # movement speed, divide distance by this
 
-    def update(self):     # update the robot state
-
+    def update(self): # update the robot state
         self._state += self.k * self.input
         self.input = [0, 0]
     
     # compute and return f(p_i, q)
     def f(self, q):
-        return 0.5 * np.inner(q - self.state, q - self.state)
+        return np.linalg.norm(q - self.state) / self.speed
+        # return 0.5 * np.inner(q - self.state, q - self.state)
 
     @property
     def state(self):
@@ -33,7 +33,7 @@ class Environment(object):
         self.res = res
 
         # bottom left corner is 0, 0 both in pixels and in meters
-        self.robots = robots        # initialized w/ array of Robot objects
+        self.robots = robots # initialized w/ array of Robot objects
         self.meas_func = np.zeros((len(robots)))
         self.dist = np.zeros((2, len(robots)))
 
@@ -132,11 +132,11 @@ def run_grid(env, iter):
         final_y.append(bot.state[1])
     return (final_x, final_y)
 
-def get_coverage_medians(n, xs, ys, dim, iters):
+def get_coverage_medians(n, xs, ys, dim, iters, robot_speeds):
     print("Finding coverage medians")
     robots = []
     for i in range(n):
-        robots.append(Robot([xs[i], ys[i]]))
+        robots.append(Robot([xs[i], ys[i]], speed=robot_speeds[i]))
     env = Environment(dim, dim, 0.1, robots)
     return run_grid(env, iters)
 
