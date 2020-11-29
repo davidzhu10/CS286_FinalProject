@@ -22,15 +22,22 @@ def generate_task_locs(T, dim):
         ty.append(random.random()*dim)
     return (tx, ty)
 
+def generate_task_urgencies(T, low=0.5, high=2.0):
+    tu = []
+    for i in range(T):
+        tu.append(random.random()*(high-low) + low)
+    return tu
+
 def euc_dist(x1, y1, x2, y2):
     return math.sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2))
 
-def which_region(x, y, mx, my):
+def which_region(x, y, mx, my, robot_speeds):
     BIG = 1000000
     mindist = BIG
     mini = -1
     for i in range(len(mx)):
         dist = euc_dist(mx[i], my[i], x, y)
+        # dist = euc_dist(mx[i], my[i], x, y) / np.sqrt(robot_speeds[i])
         if dist < mindist:
             mindist = dist
             mini = i
@@ -77,9 +84,10 @@ def simulate(mx, my, tasks, robot_speed, task_completion_time):
                 t2 = tasks[ind[i] + tdone][0]
                 x2 = tasks[ind[i] + tdone][1]
                 y2 = tasks[ind[i] + tdone][2]
+                u2 = tasks[ind[i] + tdone][3]
                 curtime += euc_dist(x1, y1, x2, y2) / robot_speed # travel time
                 curtime += task_completion_time # task completion time
-                total_wait_time += curtime - t2
+                total_wait_time += (curtime - t2) * u2
 
             # TSPtime = dist/1.0 + (len(ind)-1) * 1.0
             # curtime += TSPtime
@@ -107,7 +115,7 @@ if __name__ == "__main__":
     # init_x = [2, 4, 5, 9, 8]
     # init_y = [6, 4, 3, 8, 1]
 
-    coverage_iters = 20
+    coverage_iters = 40
     # (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, [1.0] * n) # equal voronoi regions
     (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, robot_speeds) # adjust voronoi based on speeds
 
@@ -115,17 +123,22 @@ if __name__ == "__main__":
     T = len(task_times) # number of tasks
     # print("Arrival times of", T, "tasks:", task_times)
     (tx, ty) = generate_task_locs(T, dim)
+    tu = generate_task_urgencies(T, low=0.5, high=2.0)
     rtasks = [[] for _ in range(n)]
     for i in range(T):
-        which_robot = which_region(tx[i], ty[i], mx, my)
-        rtasks[which_robot].append((task_times[i], tx[i], ty[i]))
+        which_robot = which_region(tx[i], ty[i], mx, my, robot_speeds)
+        rtasks[which_robot].append((task_times[i], tx[i], ty[i], tu[i]))
     # print("Tasks assigned to each robot:", rtasks)
 
     # simulate robots
     total_wait_time = 0
+    output = ""
     for i in range(n):
-        print("Simulating robot", i, "with", len(rtasks[i]), "tasks")
+        output += "Simulating robot " + str(i) + " with " + str(len(rtasks[i])) + " tasks\n"
+        # print("Simulating robot", i, "with", len(rtasks[i]), "tasks")
         this_wait_time, end_time = simulate(mx[i], my[i], rtasks[i], robot_speeds[i], task_completion_time)
         total_wait_time += this_wait_time
-        print("Average wait time for robot", i, "tasks:", this_wait_time/len(rtasks[i]))
+        output += "Average wait time for robot " + str(i) + " tasks: " + str(this_wait_time/len(rtasks[i])) + "\n"
+        # print("Average wait time for robot", i, "tasks:", this_wait_time/len(rtasks[i]))
+    print(output)
     print("Average wait time for all tasks:", total_wait_time/T)

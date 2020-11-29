@@ -19,6 +19,7 @@ class Robot(object):
     # compute and return f(p_i, q)
     def f(self, q):
         return np.linalg.norm(q - self.state) / self.speed
+        # return np.linalg.norm(q - self.state) / np.sqrt(self.speed)
         # return 0.5 * np.inner(q - self.state, q - self.state)
 
     @property
