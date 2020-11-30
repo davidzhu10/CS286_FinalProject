@@ -17,14 +17,14 @@ def generate_task_times(end_time, lam):
 def generate_task_locs(T, dim):
     tx = []
     ty = []
-    for i in range(T):
+    for _ in range(T):
         tx.append(random.random()*dim)
         ty.append(random.random()*dim)
     return (tx, ty)
 
 def generate_task_urgencies(T, low=0.5, high=2.0):
     tu = []
-    for i in range(T):
+    for _ in range(T):
         tu.append(random.random()*(high-low) + low)
     return tu
 
@@ -43,17 +43,30 @@ def which_region(x, y, mx, my, robot_speeds):
             mini = i
     return mini
 
+# returns cutoff of last task to include
+def get_cutoff(todo):
+    cutoff = random.randrange(len(todo)) # uniform random
+
+    # val = random.random()*max(todo)[0] # uniform random over urgencies
+    # cutoff = -1
+    # while cutoff < len(todo)-1 and todo[cutoff+1][0] > val:
+    #     cutoff += 1
+
+    # cutoff = len(todo) - 1 # complete all
+    return cutoff
+
 def simulate(mx, my, tasks, robot_speed, task_completion_time):
     total_wait_time = 0
     curtime = 0
-    tdone = -1 # most recent task done
+    numdone = 0 # number of tasks completed
     tavailable = -1 # latest task available to be done
     curx = mx
     cury = my
-    while (tdone + 1 < len(tasks)):
-        # print("tdone:", tdone)
+    todo = [] # contains pairs of urgencies and task indices of todo tasks
+    while (numdone < len(tasks)):
+        # print("numdone:", numdone)
         # print("tavailable:", tavailable)
-        if tavailable == tdone: # no tasks available
+        if len(todo) == 0: # no tasks available
             if curx != mx or cury != my: # not at median, so move to median
                 dist = euc_dist(curx, cury, mx, my)
                 curtime += dist / robot_speed
@@ -61,14 +74,19 @@ def simulate(mx, my, tasks, robot_speed, task_completion_time):
                 cury = my
             else: # already at median, fast forward to next task
                 tavailable += 1
+                todo.append((tasks[tavailable][3], tavailable))
                 curtime = tasks[tavailable][0]
         else:
-            # execute TSP on tdone+1 through tavailable
+            # sort todo by highest urgency first
+            todo.sort(reverse=True)
+            cutoff = get_cutoff(todo)
+
+            # execute TSP on list of todo tasks up to and including cutoff index
             nodes = [(curx, cury)]
-            for i in range(tdone+1, tavailable+1):
-                nodes.append((tasks[i][1], tasks[i][2]))
-            # nodes = [(tasks[i][1], tasks[i][2]) for i in range(tdone+1, tavailable+1)]
-            # nodes.append((curx, cury))
+            for i in range(cutoff + 1):
+                taski = todo[i][1]
+                nodes.append((tasks[taski][1], tasks[taski][2]))
+
             (dist, ind) = tsp.tsp3(nodes)
             assert ind[0] == 0
             d1 = euc_dist(nodes[0][0], nodes[0][1], nodes[ind[1]][0], nodes[ind[1]][1])
@@ -81,21 +99,22 @@ def simulate(mx, my, tasks, robot_speed, task_completion_time):
             for i in range(1, len(ind)):
                 x1 = nodes[ind[i-1]][0]
                 y1 = nodes[ind[i-1]][1]
-                t2 = tasks[ind[i] + tdone][0]
-                x2 = tasks[ind[i] + tdone][1]
-                y2 = tasks[ind[i] + tdone][2]
-                u2 = tasks[ind[i] + tdone][3]
+                t2 = tasks[todo[ind[i]-1][1]][0]
+                x2 = tasks[todo[ind[i]-1][1]][1]
+                y2 = tasks[todo[ind[i]-1][1]][2]
+                u2 = tasks[todo[ind[i]-1][1]][3]
                 curtime += euc_dist(x1, y1, x2, y2) / robot_speed # travel time
                 curtime += task_completion_time # task completion time
                 total_wait_time += (curtime - t2) * u2
 
-            # TSPtime = dist/1.0 + (len(ind)-1) * 1.0
-            # curtime += TSPtime
             curx = nodes[ind[-1]][0]
             cury = nodes[ind[-1]][1]
-            tdone = tavailable
+            numdone += cutoff+1
+            todo = todo[cutoff+1:]
+
         while (tavailable+1 < len(tasks) and tasks[tavailable+1][0] <= curtime): # check new available tasks
             tavailable += 1
+            todo.append((tasks[tavailable][3], tavailable))
     return (total_wait_time, curtime)
 
 if __name__ == "__main__":
@@ -115,7 +134,7 @@ if __name__ == "__main__":
     # init_x = [2, 4, 5, 9, 8]
     # init_y = [6, 4, 3, 8, 1]
 
-    coverage_iters = 40
+    coverage_iters = 5
     # (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, [1.0] * n) # equal voronoi regions
     (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, robot_speeds) # adjust voronoi based on speeds
 
@@ -123,7 +142,7 @@ if __name__ == "__main__":
     T = len(task_times) # number of tasks
     # print("Arrival times of", T, "tasks:", task_times)
     (tx, ty) = generate_task_locs(T, dim)
-    tu = generate_task_urgencies(T, low=0.5, high=2.0)
+    tu = generate_task_urgencies(T, low=0.5, high=20.0)
     rtasks = [[] for _ in range(n)]
     for i in range(T):
         which_robot = which_region(tx[i], ty[i], mx, my, robot_speeds)
