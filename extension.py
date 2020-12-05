@@ -164,9 +164,9 @@ if __name__ == "__main__":
             # print("Simulating robot", i, "with", len(rtasks[i]), "tasks")
             this_wait_time, end_time = simulate(mx[i], my[i], rtasks[i], robot_speeds[i], task_completion_time)
             total_wait_time += this_wait_time
-            output += "Average wait time for robot " + str(i) + " tasks: " + str(this_wait_time/len(rtasks[i])) + "\n"
+            output += "Average urgency-adjusted wait time for robot " + str(i) + " tasks: " + str(this_wait_time/len(rtasks[i])) + "\n"
             # print("Average wait time for robot", i, "tasks:", this_wait_time/len(rtasks[i]))
         print(output)
-        print("Average wait time for all tasks:", total_wait_time/T)
+        print("Average urgency-adjusted wait time for all tasks:", total_wait_time/T)
         ans += total_wait_time/T
     print("\nAverage over all trials:", ans/num_trials)
