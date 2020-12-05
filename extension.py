@@ -25,8 +25,8 @@ def generate_task_locs(T, dim):
 def generate_task_urgencies(T, low=0.5, high=2.0):
     tu = []
     for _ in range(T):
-        # tu.append(random.random()*(high-low) + low)
-        tu.append(high if random.random() > 0.5 else low)
+        # tu.append(random.random()*(high-low) + low) # uniform urgencies
+        tu.append(high if random.random() > 0.5 else low) # high/low urgencies
     return tu
 
 def euc_dist(x1, y1, x2, y2):
@@ -47,11 +47,11 @@ def which_region(x, y, mx, my, robot_speeds):
 
 # Returns cutoff of last task to include
 def get_cutoff(todo):
-    # cutoff = len(todo) - 1 # complete all
+    # cutoff = len(todo) - 1 # complete all tasks
 
-    # cutoff = random.randrange(len(todo)) # uniform random
+    # cutoff = random.randrange(len(todo)) # discrete cutoff
 
-    val = random.random()*max(todo)[0] # uniform random over urgencies
+    val = random.random()*max(todo)[0] # continuous cutoff
     cutoff = -1
     while cutoff < len(todo)-1 and todo[cutoff+1][0] > val:
         cutoff += 1
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     coverage_iters = 40
     # (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, [1.0] * n) # equal voronoi regions
-    (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, robot_speeds) # adjust voronoi based on speeds
+    (mx, my) = get_coverage_medians(n, init_x, init_y, dim, coverage_iters, robot_speeds) # adjust regions based on speeds
 
     ans = 0
     num_trials = 5
